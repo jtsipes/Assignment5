@@ -68,6 +68,7 @@
           //cropPlugin.requireFocus();
           this.addEventListener('core:transformation', function() {
             sessionStorage.setItem("editedImage", dkrm.canvas.toDataURL())
+            sessionStorage.setItem("isEdited", "true");
           });
         }
       });

@@ -5,20 +5,71 @@
   <script src='asyncReq.js'> </script>
   <script src='https://code.jquery.com/jquery-3.2.0.min.js'> </script>
   <script>
+  var fileUploaded = function()
+{
+   var file = $('#theFileUploader').get(0);
+   var fileObj = $('#theFileUploader').get(0).files[0]
+   var filename = fileObj.name;
+   var ext = filename.split(".");
+   ext = ext[ext.length-1];
+   console.log(ext);
+
+   var fd = new FormData();
+   var fileInput = "s3Upload_" + new Date().getTime().toString() + "." + ext;
+   fd.append('fileInput', fileInput);
+   fd.append('input', file.files[0]);
+   fd.append('date', (new Date()).toString());
+
+    //fd.append('data', data);
+    var xhr = new XMLHttpRequest();
+    xhr.onreadystatechange = function(e) {
+      if (xhr.readyState != 4) { return; }
+        // callback logic
+       document.getElementById("preview").src = "https://s3-us-west-2.amazonaws.com/ame470spr2017/" + fileInput;
+       addNew("https://s3-us-west-2.amazonaws.com/ame470spr2017/" + fileInput);
+    };
+    xhr.open("POST", "/uploadFile", true);
+    xhr.send(fd);
+}
+
+function saveImageEdit(){
+  console.log("YAY");
+  if(sessionStorage.getItem("isEdited") == "true"){
+     var fd = new FormData();
+     var fileInput = document.getElementById("preview").src.split("ame470spr2017")[1];
+     fileInput = fileInput.split("?")[0];
+     fd.append('fileInput', fileInput);
+     fd.append('date', (new Date()).toString());
+     fd.append('data', sessionStorage.getItem("editedImage"));
+
+      //fd.append('data', data);
+      var xhr = new XMLHttpRequest();
+      xhr.onreadystatechange = function(e) {
+        cancelImageEdit();
+        if (xhr.readyState != 4) { return; }
+          // callback logic
+        document.getElementById("preview").src = "https://s3-us-west-2.amazonaws.com/ame470spr2017/" + fileInput + "?t=" + new Date().getTime();
+      };
+      xhr.open("POST", "/uploadImage", true);
+      xhr.send(fd);
+  }
+
+}
+
     function cancelImageEdit()
     {
       document.getElementById("DRFrame").src = "";
       document.getElementById("editWrapper").style.display = "none";
     }
+
     function editImage(){
-      var url = document.getElementById("theImage").style.backgroundImage.replace('url("', "").replace('")','').replace("url('", "").replace("')",'');
-      console.log(url);
+      var url = document.getElementById("preview").src;
       console.log(url);
       document.getElementById("DRFrame").src = "./demo/index.html#" + url;
       document.getElementById("editWrapper").style.display = "block";
-    }
-    function addNew(){
-      var imageURL = prompt("Enter New Image URL:");
+    sessionStorage.setItem("isEdited", "false");
+  }
+    function addNew(imageURL){
       var id = new Date().getTime();
       if(imageURL.indexOf("http") >=0 && imageURL.length > 10){
         var url = "./addTodo" + "?id=" + id + "&url=" + imageURL + "&name=Untitled";
@@ -64,7 +115,7 @@
         loadFile(url ,function(d){
           var data = JSON.parse(d);
           document.getElementById("theTitle").innerHTML = data.name;
-          document.getElementById("theImage").style.backgroundImage = "url(" + data.url + ")";
+          document.getElementById("preview").style.backgroundImage = "url(" + data.url + ")";
         });
     }
     function start()
@@ -90,17 +141,17 @@
         top: 20px;
         right: 20px;
       }
-      #uploadButton
+      #theFileUploader
       {
         position: absolute;
         top: 20px;
-        right: 120px;
+        right: 20px;
       }
       .delButton
       {
           float: right;
       }
-      #theImage{
+      #preview{
         height: 200px;
         width: 100%;
         background-size: contain;
@@ -132,12 +183,11 @@
 
 <body onload='start()'>
   <h1> Images </h1>
-  <button id='addButton' onclick='addNew()'> Add using URL </button>
-  <input id='uploadButton' type="file" onchange='uploadNew()'>
+    <input type='file' id='theFileUploader' onchange='fileUploaded()'>
   <ol id='todoListWrapper'> </ol>
   <div id='theDetails'>
     <h1 id='theTitle'></h1>
-    <div id='theImage'></div>
+    <div id='preview'></div>
 
     <button onclick='deleteImage()'> Delete </button>
     <button onclick='renameImage()'> Rename </button>
